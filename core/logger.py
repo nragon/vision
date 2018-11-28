@@ -21,4 +21,4 @@ def error(message):
 
 
 def log(level, message):
-    print("%s %s-keeper[%s]: %s" % (strftime(TIME_FORMAT), common.PROCESS_NAME, level, message))
+    print("%s %s-vision[%s]: %s" % (strftime(TIME_FORMAT), common.PROCESS_NAME, level, message))
