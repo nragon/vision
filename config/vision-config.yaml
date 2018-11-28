@@ -1,0 +1,10 @@
+output:
+filesystem.threshold: 80
+cameras:
+  front:
+    rtsp.ip:
+    rtsp.port:
+    rtsp.url:
+    fps: 25
+    keep: 259200
+    duration: 30
