@@ -13,37 +13,41 @@ def start():
     output = config["output"]
     threshold = config["filesystem.threshold"]
     loop_interval = 10
-    camera_dirs = []
+    segment_dirs = []
     for camera, config in config["cameras"].items():
-        camera_dirs.append("%s/%s" % (output, camera))
+        segment_dirs.append("%s/%s" % (output, camera))
         loop_interval = min(loop_interval, int(config["duration"]))
 
     del config
     try:
         while 1:
-            if free_percentage(output) >= threshold:
+            if free_percentage(output) < threshold:
                 logger.warning("filesystem has reached max size threshold")
                 logger.info("cleaning old segments")
-                for segment_dir in camera_dirs:
-                    try:
-                        segments = []
-                        for segment in listdir(segment_dir):
-                            segments.append(join(segment_dir, segment))
-
-                        if len(segments) > 1:
-                            segment = sorted(segments, key=getmtime)[0]
-                            logger.info("cleaning oldest segment[%s] to free space" % segment)
-                            remove(segment)
-                            logger.info("segment %s removed" % segment)
-
-                            if free_percentage(output) < threshold:
-                                break
-                    except Exception as e:
-                        logger.info("unable to remove segments from %s: %s" % (segment_dir, e))
+                for segment_dir in segment_dirs:
+                    clean(segment_dir)
+                    if free_percentage(output) > threshold:
+                        return
             else:
                 sleep(loop_interval)
     finally:
         logger.info("stopping watcher[pid=%s]" % common.PID)
+
+
+def clean(segment_dir):
+    try:
+        segments = []
+        for segment in listdir(segment_dir):
+            segments.append(join(segment_dir, segment))
+
+        if segments:
+            segment = sorted(segments, key=getmtime, reverse=True)[0]
+            logger.info("cleaning oldest segment[%s] to free space" % segment)
+            remove(segment)
+            logger.info("segment %s removed" % segment)
+
+    except Exception as e:
+        logger.info("unable to remove segments from %s: %s" % (segment_dir, e))
 
 
 if hasattr(os, "statvfs"):

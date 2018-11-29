@@ -38,7 +38,7 @@ You can find a set of properties in a yaml file inside [config](config) director
 Configuration | Definition
 --------------| ----------
 output | Directory where records will be stored
-filesystem.threshold | Max percentage of filesystem usage before starting deleting old records
+filesystem.threshold | Free filesystem usage percentage before starting deleting old records
 cameras | List of ip cameras
 
 ## Camera configuration
