@@ -44,7 +44,7 @@ def clean(segment_dir):
             remove(segment)
             logger.info("segment %s removed" % segment)
     except Exception as e:
-        logger.info("unable to remove segments from %s: %s" % (segment_dir, e))
+        logger.error("unable to remove segments from %s: %s" % (segment_dir, e))
 
 
 if hasattr(os, "statvfs"):

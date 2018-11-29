@@ -27,7 +27,7 @@ def start():
                 try:
                     clean(segment_dir, (now() - timedelta(seconds=config["keep"] + config["duration"])).timestamp())
                 except Exception as e:
-                    logger.info("unable to clean segments from %s: %s" % (segment_dir, e))
+                    logger.error("unable to clean segments from %s: %s" % (segment_dir, e))
 
             sleep(loop_interval)
     finally:
@@ -40,11 +40,11 @@ def clean(segment_dir, threshold):
             break
 
         try:
-            logger.info("segment %s reached retention period" % segment)
+            logger.warning("segment %s reached retention period" % segment)
             remove(segment)
             logger.info("segment %s was removed" % segment)
         except Exception as e:
-            logger.info("unable to clean segment %s: %s" % (segment, e))
+            logger.error("unable to clean segment %s: %s" % (segment, e))
 
 
 def main():
