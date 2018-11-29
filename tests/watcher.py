@@ -66,7 +66,12 @@ class Watcher(WatcherTestCase):
     def test_loop(self):
         file_count = len(listdir(DATA_DIR))
         self.assertEqual(file_count, 2)
-        thread = Thread(target=watcher.loop, args=([DATA_DIR], 1, DATA_DIR, self.initial_free,))
+
+        def loop(segment_dirs, loop_interval, output, threshold):
+            with storage.get_connection() as conn:
+                watcher.loop(conn, segment_dirs, loop_interval, output, threshold)
+
+        thread = Thread(target=loop, args=([DATA_DIR], 1, DATA_DIR, self.initial_free,))
         thread.daemon = True
         thread.start()
         sleep(3)
@@ -88,9 +93,9 @@ class Watcher(WatcherTestCase):
         self.assertEqual(file_count, 1)
         watcher.stop()
         thread.join()
-        self.assertEqual(storage.get_int(storage.get_connection(), watcher.DELETED_TOTAL), 1)
-        self.assertEqual(storage.get_int(storage.get_connection(), watcher.DELETED_SINCE_START), 1)
-        thread = Thread(target=watcher.loop, args=([DATA_DIR], 1, DATA_DIR, self.initial_free,))
+        self.assertEqual(storage.get_int(storage.get_connection(), watcher.WATCHER_DELETED_TOTAL), 1)
+        self.assertEqual(storage.get_int(storage.get_connection(), watcher.WATCHER_DELETED_SINCE_START), 1)
+        thread = Thread(target=loop, args=([DATA_DIR], 1, DATA_DIR, self.initial_free,))
         thread.daemon = True
         thread.start()
         file_count = len(listdir(DATA_DIR))
@@ -109,5 +114,5 @@ class Watcher(WatcherTestCase):
         self.assertEqual(file_count, 0)
         watcher.stop()
         thread.join()
-        self.assertEqual(storage.get_int(storage.get_connection(), watcher.DELETED_TOTAL), 2)
-        self.assertEqual(storage.get_int(storage.get_connection(), watcher.DELETED_SINCE_START), 1)
+        self.assertEqual(storage.get_int(storage.get_connection(), watcher.WATCHER_DELETED_TOTAL), 2)
+        self.assertEqual(storage.get_int(storage.get_connection(), watcher.WATCHER_DELETED_SINCE_START), 1)

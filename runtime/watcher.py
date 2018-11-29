@@ -7,8 +7,9 @@ from time import sleep
 from core import common, logger, storage
 from core.common import list_abs
 
-DELETED_TOTAL = "watcher.deleted.total"
-DELETED_SINCE_START = "watcher.deleted.sinceStart"
+WATCHER_DELETED_TOTAL = "watcher.deleted.total"
+WATCHER_DELETED_SINCE_START = "watcher.deleted.sinceStart"
+WATCHER_STATUS = "watcher.status"
 
 running = False
 
@@ -25,34 +26,36 @@ def start():
         loop_interval = min(loop_interval, int(config["duration"]))
 
     del config
-    try:
-        loop(segment_dirs, loop_interval, output, threshold)
-    finally:
-        logger.info("stopping watcher[pid=%s]" % common.PID)
-
-
-def loop(segment_dirs, loop_interval, output, threshold):
     with storage.get_connection() as conn:
-        inc = storage.inc
-        delete_total = storage.get_int(conn, DELETED_TOTAL)
-        if not delete_total:
-            delete_total = 0
+        storage.put(conn, WATCHER_STATUS, "Running")
+        try:
+            loop(conn, segment_dirs, loop_interval, output, threshold)
+        finally:
+            storage.put(conn, WATCHER_STATUS, "Not running")
+            logger.info("stopping watcher[pid=%s]" % common.PID)
 
-        delete_since_start = 0
-        global running
-        running = True
-        while running:
-            if free_percentage(output) < threshold:
-                logger.warning("filesystem has reached max size threshold")
-                logger.info("cleaning old segments")
-                for segment_dir in segment_dirs:
-                    if clean(segment_dir):
-                        delete_total = inc(conn, DELETED_TOTAL, delete_total)
-                        delete_since_start = inc(conn, DELETED_SINCE_START, delete_since_start)
-                        if free_percentage(output) > threshold:
-                            break
 
-            sleep(loop_interval)
+def loop(conn, segment_dirs, loop_interval, output, threshold):
+    inc = storage.inc
+    delete_total = storage.get_int(conn, WATCHER_DELETED_TOTAL)
+    if not delete_total:
+        delete_total = 0
+
+    delete_since_start = 0
+    global running
+    running = True
+    while running:
+        if free_percentage(output) < threshold:
+            logger.warning("filesystem has reached max size threshold")
+            logger.info("cleaning old segments")
+            for segment_dir in segment_dirs:
+                if clean(segment_dir):
+                    delete_total = inc(conn, WATCHER_DELETED_TOTAL, delete_total)
+                    delete_since_start = inc(conn, WATCHER_DELETED_SINCE_START, delete_since_start)
+                    if free_percentage(output) > threshold:
+                        break
+
+        sleep(loop_interval)
 
 
 def clean(segment_dir):

@@ -84,8 +84,13 @@ class Cleaner(CleanerTestCase):
     def test_loop(self):
         file_count = len(listdir(DATA_DIR))
         self.assertEqual(file_count, 3)
-        thread = Thread(target=cleaner.loop, args=({"front": {"segment_dir": DATA_DIR, "keep": 172800, "duration": 30}},
-                                                   1,))
+
+        def loop(cameras, loop_interval):
+            with storage.get_connection() as conn:
+                cleaner.loop(conn, cameras, loop_interval)
+
+        thread = Thread(target=loop, args=({"front": {"segment_dir": DATA_DIR, "keep": 172800, "duration": 30}},
+                                           1,))
         thread.daemon = True
         thread.start()
         sleep(1)
@@ -101,8 +106,8 @@ class Cleaner(CleanerTestCase):
         thread.join()
         self.assertEqual(storage.get_int(storage.get_connection(), cleaner.DELETED_TOTAL), 1)
         self.assertEqual(storage.get_int(storage.get_connection(), cleaner.DELETED_SINCE_START), 1)
-        thread = Thread(target=cleaner.loop, args=({"front": {"segment_dir": DATA_DIR, "keep": 172800, "duration": 30}},
-                                                   1,))
+        thread = Thread(target=loop, args=({"front": {"segment_dir": DATA_DIR, "keep": 172800, "duration": 30}},
+                                           1,))
         thread.daemon = True
         thread.start()
         file_count = len(listdir(DATA_DIR))
