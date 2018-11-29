@@ -19,14 +19,17 @@ def start():
                "-strftime", "1", "-f", "segment", "-segment_time", str(duration), "-segment_format", "mp4",
                "%s/%s-%s.mp4" % (segment_dir, common.PROCESS_NAME, "%Y%m%d%H%M%S")]
     url = (config["rtsp.ip"], config["rtsp.port"])
+    request_command = bytes(
+        "OPTIONS rtsp://%s:%s RTSP/1.0\\r\\nCSeq: 1\\r\\nUser-Agent: python\\r\\nAccept: application/sdp\\r\\n\\r\\n" % (
+            url[0], str(url[1])), "utf-8")
     del config, segment_dir
     process = None
     try:
         while 1:
-            if not is_reachable(url):
+            if not is_reachable(url, request_command):
                 logger.warning("destination %s:%s is not reachable" % (url[0], str(url[1])))
                 logger.info("waiting for camera[%s:%s] to be available" % (url[0], str(url[1])))
-                while not is_reachable(url):
+                while not is_reachable(url, request_command):
                     sleep(1)
 
                 close(process)
@@ -71,14 +74,16 @@ def is_running(process):
         return 0
 
 
-def is_reachable(url):
+def is_reachable(url, request_command):
     try:
-        s = socket(AF_INET, SOCK_STREAM)
-        s.settimeout(1)
-        s.connect(url)
-        s.shutdown(SHUT_RDWR)
+        with socket(AF_INET, SOCK_STREAM) as s:
+            s.settimeout(1)
+            s.connect(url)
+            s.send(request_command)
+            index = s.recv(4096).decode("uft-8").find("RTSP/1.0 200 OK")
+            s.shutdown(SHUT_RDWR)
 
-        return 1
+        return index == 0
     except:
         return 0
 

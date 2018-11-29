@@ -28,9 +28,9 @@ def start():
                 for segment_dir in segment_dirs:
                     clean(segment_dir)
                     if free_percentage(output) > threshold:
-                        return
-            else:
-                sleep(loop_interval)
+                        break
+
+            sleep(loop_interval)
     finally:
         logger.info("stopping watcher[pid=%s]" % common.PID)
 
