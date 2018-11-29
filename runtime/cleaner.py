@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
-from os import listdir, remove
+from os import remove
 from os.path import getmtime, join
 from signal import signal, SIGTERM, SIGINT
 from time import sleep
 
 from core import common, logger
+from core.common import list_abs
 
 
 def start():
@@ -34,21 +35,16 @@ def start():
 
 
 def clean(segment_dir, threshold):
-    segments = []
-    for segment in listdir(segment_dir):
-        segments.append(join(segment_dir, segment))
+    for segment in sorted(list_abs(segment_dir), key=getmtime):
+        if getmtime(segment) >= threshold:
+            break
 
-    if segments:
-        for segment in sorted(segments, key=getmtime, reverse=True):
-            if getmtime(segment) >= threshold:
-                break
-
-            try:
-                logger.info("segment %s reached retention period" % segment)
-                remove(segment)
-                logger.info("segment %s was removed" % segment)
-            except Exception as e:
-                logger.info("unable to clean segment %s: %s" % (segment, e))
+        try:
+            logger.info("segment %s reached retention period" % segment)
+            remove(segment)
+            logger.info("segment %s was removed" % segment)
+        except Exception as e:
+            logger.info("unable to clean segment %s: %s" % (segment, e))
 
 
 def main():

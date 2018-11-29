@@ -17,11 +17,8 @@ class WatcherTestCase(TestCase):
             mkdir(DATA_DIR)
         # create a file
         self.oldest_path = join(DATA_DIR, "oldest.mp4")
-        with open(self.oldest_path, "wb") as oldest:
+        with open(self.oldest_path, "wb"):
             pass
-        minus_3_days = datetime.now() - timedelta(seconds=60)
-        minus_3_days = mktime(minus_3_days.timetuple())
-        utime(self.oldest_path, (minus_3_days, minus_3_days))
         # create a file
         self.newest_path = join(DATA_DIR, "newest.mp4")
         with open(self.newest_path, "w"):
@@ -52,6 +49,9 @@ class Watcher(WatcherTestCase):
             oldest.seek(oldest_path_size - 1)
             oldest.write(b"\0")
 
+        minus_3_days = datetime.now() - timedelta(seconds=60)
+        minus_3_days = mktime(minus_3_days.timetuple())
+        utime(self.oldest_path, (minus_3_days, minus_3_days))
         if watcher.free_percentage(DATA_DIR) < self.initial_free:
             watcher.clean(DATA_DIR)
 

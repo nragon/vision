@@ -1,10 +1,11 @@
 import os
-from os import listdir, remove
+from os import remove
 from os.path import getmtime, join
 from signal import signal, SIGTERM, SIGINT
 from time import sleep
 
 from core import common, logger
+from core.common import list_abs
 
 
 def start():
@@ -15,7 +16,7 @@ def start():
     loop_interval = 10
     segment_dirs = []
     for camera, config in config["cameras"].items():
-        segment_dirs.append("%s/%s" % (output, camera))
+        segment_dirs.append(join(output, camera))
         loop_interval = min(loop_interval, int(config["duration"]))
 
     del config
@@ -36,16 +37,12 @@ def start():
 
 def clean(segment_dir):
     try:
-        segments = []
-        for segment in listdir(segment_dir):
-            segments.append(join(segment_dir, segment))
-
+        segments = sorted(list_abs(segment_dir), key=getmtime)
         if segments:
-            segment = sorted(segments, key=getmtime, reverse=True)[0]
+            segment = segments[0]
             logger.info("cleaning oldest segment[%s] to free space" % segment)
             remove(segment)
             logger.info("segment %s removed" % segment)
-
     except Exception as e:
         logger.info("unable to remove segments from %s: %s" % (segment_dir, e))
 
