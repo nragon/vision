@@ -5,7 +5,7 @@ from os.path import exists
 from time import sleep
 from setproctitle import setproctitle
 
-from core import logger, common
+from core import logger, common, storage
 
 PROCESSES = [
     "watcher",
@@ -80,6 +80,7 @@ def is_running(process):
 
 def start():
     logger.info("starting manager[pid=%s]" % common.PID)
+    storage.setup()
     config = common.load_config()
     output = config["output"]
     for camera in config["cameras"].keys():

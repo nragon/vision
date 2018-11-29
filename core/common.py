@@ -7,10 +7,11 @@ from yaml import load
 
 PID = getpid()
 PROCESS_NAME = current_process().name
+VISION_HOME = environ["VISION_HOME"]
 
 
 def load_config():
-    return load(open("%s/config/vision-config.yaml" % environ["VISION_HOME"]))
+    return load(open("%s/config/vision-config.yaml" % VISION_HOME))
 
 
 def stop(signum=None, frame=None):

@@ -4,8 +4,13 @@ from os.path import getmtime, join
 from signal import signal, SIGTERM, SIGINT
 from time import sleep
 
-from core import common, logger
+from core import common, logger, storage
 from core.common import list_abs
+
+DELETED_TOTAL = "watcher.deleted.total"
+DELETED_SINCE_START = "watcher.deleted.sinceStart"
+
+running = False
 
 
 def start():
@@ -21,18 +26,33 @@ def start():
 
     del config
     try:
-        while 1:
+        loop(segment_dirs, loop_interval, output, threshold)
+    finally:
+        logger.info("stopping watcher[pid=%s]" % common.PID)
+
+
+def loop(segment_dirs, loop_interval, output, threshold):
+    with storage.get_connection() as conn:
+        inc = storage.inc
+        delete_total = storage.get_int(conn, DELETED_TOTAL)
+        if not delete_total:
+            delete_total = 0
+
+        delete_since_start = 0
+        global running
+        running = True
+        while running:
             if free_percentage(output) < threshold:
                 logger.warning("filesystem has reached max size threshold")
                 logger.info("cleaning old segments")
                 for segment_dir in segment_dirs:
-                    clean(segment_dir)
-                    if free_percentage(output) > threshold:
-                        break
+                    if clean(segment_dir):
+                        delete_total = inc(conn, DELETED_TOTAL, delete_total)
+                        delete_since_start = inc(conn, DELETED_SINCE_START, delete_since_start)
+                        if free_percentage(output) > threshold:
+                            break
 
             sleep(loop_interval)
-    finally:
-        logger.info("stopping watcher[pid=%s]" % common.PID)
 
 
 def clean(segment_dir):
@@ -43,8 +63,12 @@ def clean(segment_dir):
             logger.info("cleaning oldest segment[%s] to free space" % segment)
             remove(segment)
             logger.info("segment %s removed" % segment)
+
+            return True
     except Exception as e:
         logger.error("unable to remove segments from %s: %s" % (segment_dir, e))
+
+        return False
 
 
 if hasattr(os, "statvfs"):
@@ -67,9 +91,19 @@ elif os.name == "nt":
         return free * 100 / total
 
 
+def stop():
+    global running
+    running = False
+
+
+def handle_signal(signum=None, frame=None):
+    stop()
+    common.stop()
+
+
 def main():
-    signal(SIGTERM, common.stop)
-    signal(SIGINT, common.stop)
+    signal(SIGTERM, handle_signal)
+    signal(SIGINT, handle_signal)
     try:
         start()
     except KeyboardInterrupt:
