@@ -1,3 +1,4 @@
+from multiprocessing import current_process
 from os import devnull, kill
 from signal import signal, SIGTERM, SIGINT
 from socket import socket, SOCK_STREAM, AF_INET, SHUT_RDWR
@@ -6,18 +7,20 @@ from time import sleep
 
 from core import common, logger
 
+PROCESS_NAME = current_process().name
+
 
 def start():
     logger.info("starting recorder[pid=%s]" % common.PID)
     config = common.load_config()
-    segment_dir = "%s/%s" % (config["output"], common.PROCESS_NAME)
-    config = config["cameras"][common.PROCESS_NAME]
-    logger.info("saving segments of camera %s in directory %s" % (common.PROCESS_NAME, segment_dir))
+    segment_dir = "%s/%s" % (config["output"], PROCESS_NAME)
+    config = config["cameras"][PROCESS_NAME]
+    logger.info("saving segments of camera %s in directory %s" % (PROCESS_NAME, segment_dir))
     duration = int(config["duration"])
     command = ["ffmpeg", "-rtsp_transport", "tcp", "-i", config["rtsp.url"], "-an", "-sn", "-b:v", "132k", "-bufsize",
                "132k", "-c:v", "copy", "-r", str(config["fps"]), "-bsf:v", "h264_mp4toannexb", "-map", "0", "-shortest",
                "-strftime", "1", "-f", "segment", "-segment_time", str(duration), "-segment_format", "mp4",
-               "%s/%s-%s.mp4" % (segment_dir, common.PROCESS_NAME, "%Y%m%d%H%M%S")]
+               "%s/%s-%s.mp4" % (segment_dir, PROCESS_NAME, "%Y%m%d%H%M%S")]
     url = (config["rtsp.ip"], config["rtsp.port"])
     request_command = bytes(
         "OPTIONS rtsp://%s:%s RTSP/1.0\\r\\nCSeq: 1\\r\\nUser-Agent: python\\r\\nAccept: application/sdp\\r\\n\\r\\n" % (
@@ -80,7 +83,7 @@ def is_reachable(url, request_command):
             s.settimeout(1)
             s.connect(url)
             s.send(request_command)
-            index = s.recv(4096).decode("uft-8").find("RTSP/1.0 200 OK")
+            index = s.recv(4096).decode("utf-8").find("RTSP/1.0 200 OK")
             s.shutdown(SHUT_RDWR)
 
         return index == 0

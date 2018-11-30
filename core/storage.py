@@ -1,4 +1,5 @@
 import sqlite3
+from multiprocessing import Manager
 from os import makedirs
 from os.path import join, exists
 
@@ -10,6 +11,8 @@ SELECT_STATEMENT = "select value from keystore where key = ?"
 GET_ALL = "select key, value from keystore"
 GET_KEYS = "select key from keystore"
 NUMBER_TYPE = (int, float)
+
+lock = Manager().Lock()
 
 
 def setup():
@@ -33,9 +36,10 @@ def put(conn, key, value):
         value = str(value)
 
     cursor = conn.cursor()
-    cursor.execute(INSERT_STATEMENT, (key, value))
-    cursor.execute(UPDATE_STATEMENT, (value, key))
-    conn.commit()
+    with lock:
+        cursor.execute(INSERT_STATEMENT, (key, value))
+        cursor.execute(UPDATE_STATEMENT, (value, key))
+        conn.commit()
 
     return value
 
@@ -43,9 +47,10 @@ def put(conn, key, value):
 def inc(conn, key, value, inc_value=1):
     value += inc_value
     cursor = conn.cursor()
-    cursor.execute(INSERT_STATEMENT, (key, value))
-    cursor.execute(UPDATE_STATEMENT, (value, key))
-    conn.commit()
+    with lock:
+        cursor.execute(INSERT_STATEMENT, (key, value))
+        cursor.execute(UPDATE_STATEMENT, (value, key))
+        conn.commit()
 
     return value
 

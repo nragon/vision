@@ -28,7 +28,7 @@ class WatcherTestCase(TestCase):
         with open(self.newest_path, "w"):
             pass
 
-        self.initial_free = watcher.free_percentage(DATA_DIR)
+        self.initial_free = watcher.usage_percentage(DATA_DIR)
 
     def tearDown(self):
         rmtree(DATA_DIR)
@@ -39,7 +39,7 @@ class Watcher(WatcherTestCase):
     def test_threshold_not_reached(self):
         file_count = len(listdir(DATA_DIR))
         self.assertEqual(file_count, 2)
-        if watcher.free_percentage(DATA_DIR) < self.initial_free:
+        if watcher.usage_percentage(DATA_DIR) > self.initial_free:
             watcher.clean(DATA_DIR)
 
         file_count = len(listdir(DATA_DIR))
@@ -57,7 +57,7 @@ class Watcher(WatcherTestCase):
         minus_3_days = datetime.now() - timedelta(seconds=60)
         minus_3_days = mktime(minus_3_days.timetuple())
         utime(self.oldest_path, (minus_3_days, minus_3_days))
-        if watcher.free_percentage(DATA_DIR) < self.initial_free:
+        if watcher.usage_percentage(DATA_DIR) > self.initial_free:
             watcher.clean(DATA_DIR)
 
         file_count = len(listdir(DATA_DIR))

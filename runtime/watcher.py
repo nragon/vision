@@ -45,14 +45,14 @@ def loop(conn, segment_dirs, loop_interval, output, threshold):
     global running
     running = True
     while running:
-        if free_percentage(output) < threshold:
+        if usage_percentage(output) > threshold:
             logger.warning("filesystem has reached max size threshold")
             logger.info("cleaning old segments")
             for segment_dir in segment_dirs:
                 if clean(segment_dir):
                     delete_total = inc(conn, WATCHER_DELETED_TOTAL, delete_total)
                     delete_since_start = inc(conn, WATCHER_DELETED_SINCE_START, delete_since_start)
-                    if free_percentage(output) > threshold:
+                    if usage_percentage(output) < threshold:
                         break
 
         sleep(loop_interval)
@@ -78,7 +78,7 @@ if hasattr(os, "statvfs"):
     from os import statvfs
 
 
-    def free_percentage(path):
+    def usage_percentage(path):
         st = statvfs(path)
         f_b = st.f_blocks
         f_f = st.f_frsize
@@ -88,10 +88,10 @@ elif os.name == "nt":
     from nt import _getdiskusage
 
 
-    def free_percentage(path):
+    def usage_percentage(path):
         total, free = _getdiskusage(path)
 
-        return free * 100 / total
+        return (total - free) * 100 / total
 
 
 def stop():

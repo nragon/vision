@@ -6,7 +6,6 @@ from os.path import join
 from yaml import load
 
 PID = getpid()
-PROCESS_NAME = current_process().name
 VISION_HOME = environ["VISION_HOME"]
 
 
