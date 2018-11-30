@@ -1,3 +1,7 @@
+mqtt.broker:
+mqtt.port:
+mqtt.user:
+mqtt.pass:
 output:
 filesystem.threshold: 80
 cameras:

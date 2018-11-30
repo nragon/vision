@@ -73,3 +73,15 @@ class Storage(TestCase):
     def test_get_not_exists(self):
         with storage.get_connection() as conn:
             self.assertEqual(storage.get(conn, "c"), None)
+
+    def test_get_keys(self):
+        with storage.get_connection() as conn:
+            storage.put(conn, "a", "a")
+            storage.put(conn, "b", "b")
+            self.assertEqual(list(storage.get_keys(conn)), ["a", "b"])
+
+    def test_get_all(self):
+        with storage.get_connection() as conn:
+            storage.put(conn, "a", "a")
+            storage.put(conn, "b", "b")
+            self.assertEqual(storage.get_all(conn), [("a", "a"), ("b", "b")])

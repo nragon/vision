@@ -7,9 +7,9 @@ from time import sleep
 from core import common, logger, storage
 from core.common import list_abs
 
-WATCHER_DELETED_TOTAL = "watcher.deleted.total"
-WATCHER_DELETED_SINCE_START = "watcher.deleted.sinceStart"
-WATCHER_STATUS = "watcher.status"
+WATCHER_DELETED_TOTAL = "watcherTotalDeleted"
+WATCHER_DELETED_SINCE_START = "watcherDeletedSinceStart"
+WATCHER_STATUS = "watcherStatus"
 
 running = False
 
@@ -31,7 +31,7 @@ def start():
         try:
             loop(conn, segment_dirs, loop_interval, output, threshold)
         finally:
-            storage.put(conn, WATCHER_STATUS, "Not running")
+            storage.put(conn, WATCHER_STATUS, "Not Running")
             logger.info("stopping watcher[pid=%s]" % common.PID)
 
 

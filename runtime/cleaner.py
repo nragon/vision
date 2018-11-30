@@ -7,9 +7,9 @@ from time import sleep
 from core import common, logger, storage
 from core.common import list_abs
 
-DELETED_TOTAL = "cleaner.deleted.total"
-DELETED_SINCE_START = "cleaner.deleted.sinceStart"
-CLEANER_STATUS = "cleaner.status"
+DELETED_TOTAL = "cleanerTotalDeleted"
+DELETED_SINCE_START = "cleanerDeletedSinceStart"
+CLEANER_STATUS = "cleanerStatus"
 running = False
 
 
@@ -29,7 +29,7 @@ def start():
         try:
             loop(conn, cameras, loop_interval)
         finally:
-            storage.put(conn, CLEANER_STATUS, "Not running")
+            storage.put(conn, CLEANER_STATUS, "Not Running")
             logger.info("stopping cleaner[pid=%s]" % common.PID)
 
 

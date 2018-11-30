@@ -11,7 +11,8 @@ VISION_HOME = environ["VISION_HOME"]
 
 
 def load_config():
-    return load(open("%s/config/vision-config.yaml" % VISION_HOME))
+    with open(join(VISION_HOME, "config", "vision-config.yaml")) as config:
+        return load(config)
 
 
 def stop(signum=None, frame=None):

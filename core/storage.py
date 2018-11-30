@@ -1,5 +1,5 @@
 import sqlite3
-from os import mkdir, makedirs
+from os import makedirs
 from os.path import join, exists
 
 from core import common
@@ -7,6 +7,8 @@ from core import common
 INSERT_STATEMENT = "insert or ignore into keystore values (?, ?)"
 UPDATE_STATEMENT = "update keystore set value = ? where changes() = 0 and key = ?"
 SELECT_STATEMENT = "select value from keystore where key = ?"
+GET_ALL = "select key, value from keystore"
+GET_KEYS = "select key from keystore"
 NUMBER_TYPE = (int, float)
 
 
@@ -65,3 +67,20 @@ def get_float(conn, key):
     result = get(conn, key)
 
     return float(result) if result else None
+
+
+def get_keys(conn):
+    cursor = conn.cursor()
+    result = cursor.execute(GET_KEYS).fetchall()
+
+    return map(map_keys, result) if result else None
+
+
+def map_keys(key):
+    return key[0]
+
+
+def get_all(conn):
+    cursor = conn.cursor()
+
+    return cursor.execute(GET_ALL).fetchall()

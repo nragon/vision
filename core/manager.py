@@ -9,11 +9,13 @@ from core import logger, common, storage
 
 PROCESSES = [
     "watcher",
-    "cleaner"
+    "cleaner",
+    "reporter"
 ]
 MODULES = {
     "watcher": "runtime.watcher",
-    "cleaner": "runtime.cleaner"
+    "cleaner": "runtime.cleaner",
+    "reporter": "runtime.reporter"
 }
 running = {}
 
@@ -93,27 +95,42 @@ def start():
             logger.info("directory %s created" % segment_dir)
 
     del config, output
-    for name in PROCESSES:
-        running[name] = start_process(name)
 
-    try:
+    with storage.get_connection() as conn:
+        for name in PROCESSES:
+            metric = "%sStatus" % name
+            storage.put(conn, metric, "Launching")
+            running[name] = start_process(name)
+            storage.put(conn, metric, "Launched")
+
+        try:
+            loop(conn)
+        finally:
+            logger.info("manager[pid=%s] is stopping" % common.PID)
+
+
+def loop(conn):
+    put = storage.put
+    sleep(30)
+    while 1:
+        for name in PROCESSES:
+            metric = "%s.status" % name
+            process = running.get(name)
+            if process and is_running(process):
+                put(conn, metric, "Running")
+                continue
+
+            put(conn, metric, "Not Running")
+            logger.info("process %s is not running" % name)
+            if process:
+                close_process(name, process)
+
+            put(conn, metric, "Launching")
+            process = start_process(name)
+            running[name] = process
+            put(conn, metric, "Launched")
+
         sleep(30)
-        while 1:
-            for name in PROCESSES:
-                process = running.get(name)
-                if process and is_running(process):
-                    continue
-
-                logger.info("process %s is not running" % name)
-                if process:
-                    close_process(name, process)
-
-                process = start_process(name)
-                running[name] = process
-
-            sleep(30)
-    finally:
-        logger.info("manager[pid=%s] is stopping" % common.PID)
 
 
 def close():
